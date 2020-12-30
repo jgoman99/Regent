@@ -1,0 +1,13 @@
+Each person has a utility function. 
+
+Taxes that you can create.
+currently just flat tax and proportional, change later
+
+Army: select which pop to promote
+
+end of turn event:
+choose hunting or other option. Use ML for stories?
+
+
+special events:
+richest people visit you, ask for tax repeal. (based on tax that would increase utility curve most)
