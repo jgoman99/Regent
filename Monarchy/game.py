@@ -13,30 +13,35 @@ from scipy import optimize
 class Person:
     def __init__(self):
         name = "Ted"
-        culture = rd.randint(0,2)
+        culture = str(rd.randint(0,2))
         job = "farmer"
         health = .75        
-        money = 0
+        money = 4
         
         
-        self.attributes = {"name": name, "culture": culture, "job": job, "jobwage": None,
-                           "health": health, "content" : 75}
+        self.attributes = {"name": name, "culture": culture, "job": job}
         self.resources = {"money": money}
-        self.instances = {"leisure_hours": None, "labor_hours": None }
+        self.instances = {"leisure_hours": None, "labor_hours": None,
+                           "health": health, "content" : 75,"jobwage": None}
         self.taxes = {"flat": 0, "prop": 0}
+
         
         
         # I should put description here, but eh
         self.updateJobWage()
         
+    def returnCombinedDict(self):
+        combined_dict =  {**self.attributes,**self.resources,**self.instances,**self.taxes}
+        return combined_dict
+        
     def updateJobWage(self):
         job = self.attributes["job"]
         if job == "farmer":
-            self.attributes["jobwage"] = 1
+            self.instances["jobwage"] = 1
         elif job == "thief":
-            self.attributes["jobwage"] = 0
+            self.instances["jobwage"] = 0
         else:
-            self.attributes["jobwage"] = None
+            self.instances["jobwage"] = None
             
         
     def workJob(self,person):
@@ -44,12 +49,12 @@ class Person:
         if job == "farmer":
             self.allocateTime()
             labor = self.instances["labor_hours"]
-            self.resources["money"] += self.attributes["jobwage"] * labor
+            self.resources["money"] += self.instances["jobwage"] * labor
         elif job == "thief":
             self.steal(person)
             
     def steal(self, people):
-        health = self.attributes["health"]
+        health = self.instances["health"]
         steal_chance = round((rd.random()+.49)*np.sqrt(health))
         
         if steal_chance == 1:
@@ -67,8 +72,8 @@ class Person:
     def allocateTime(self):
         # remember: weird stuff can happen with maximization, so check methods:       
         
-        wage = self.attributes["jobwage"]
-        max_hours = 16*self.attributes["health"]
+        wage = self.instances["jobwage"]
+        max_hours = 16*self.instances["health"]
         
         #fixes taxes to not cause sqrt errors:
         prop_tax = self.taxes["prop"]
@@ -97,37 +102,42 @@ class Person:
         
         if job == "farmer":
             if money > 4:
-                self.attributes["health"] += .2
+                self.instances["health"] += .2
                 self.resources["money"] -= 4
-                self.attributes["content"] += 2
+                self.instances["content"] += 2
             else:
-                self.attributes["health"] += (money-2)/10
+                self.instances["health"] += (money-2)/10
                 self.resources["money"] = 0
-                self.attributes["content"] += (money-2)*10
+                self.instances["content"] += (money-2)*10
                 
-            if self.attributes["health"] > 1:
-                self.attributes["health"] = 1
+            if self.instances["health"] > 1:
+                self.instances["health"] = 1
             
-            if self.attributes["content"] > 100:
-                self.attributes["content"] = 100
+            if self.instances["content"] > 100:
+                self.instances["content"] = 100
         elif job == "thief":
             if money > 4:
-                self.attributes["health"] += .2
+                self.instances["health"] += .2
                 self.resources["money"] -= 4
             else:
-                self.attributes["health"] += (money-2)/10
+                self.instances["health"] += (money-2)/10
                 self.resources["money"] = 0
          
-            if self.attributes["health"] > 1:
-                self.attributes["health"] = 1
+            if self.instances["health"] > 1:
+                self.instances["health"] = 1
             
         
         
     
-    def updateJob(self):
-        content, health = self.attributes["content"], self.attributes["health"]
-        if content < 20 and health >= 0.5:
-            self.attributes["job"] = "thief"
+    def updateJob(self, newJob = ""):
+        if newJob != "":
+            self.attributes["job"] = newJob
+        else:
+            oldJob = self.attributes["job"]
+            if oldJob == "farmer":
+                content, health = self.instances["content"], self.instances["health"]
+                if content < 20 and health >= 0.5:
+                    self.attributes["job"] = "thief"
             
         self.updateJobWage()
             
@@ -142,33 +152,32 @@ class Tax:
                            "tax_name": tax_name,"tax_resource": tax_resource, "tax_type": tax_type,
                            "tax_amount": tax_amount}
     #Tax(["culture","name"],[[0,2],"Ted"],["=","="],"xtax","money","flat",2)
-    def isPersonTaxable(self,person):
-        eligibleForTax = True
+    def isPersonEligible(self,person):
+        eligible = True
         for index ,subset_key in enumerate(self.attributes["subset_keys"]):
             subset_value = self.attributes["subset_values"][index]
             
             if type(subset_value) == list:
                 if person.attributes[subset_key] not in subset_value:
-                    eligibleForTax = False
+                    eligible = False
             else:
                 subset_condition = self.attributes["subset_conditions"][index]
                 
                 if (subset_condition == ">"):
                     if (person.attributes[subset_key] <= subset_value):
-                        eligibleForTax = False
+                        eligible = False
                 elif (subset_condition == "="):
                     if (person.attributes[subset_key] != subset_value):
-                        eligibleForTax = False
+                        eligible = False
                 elif (subset_condition == "<"):
                     if (person.attributes[subset_key] >= subset_value):
-                        eligibleForTax = False
+                        eligible = False
                 else:
                     print("error")
                   
-        return eligibleForTax
+        return eligible
     
-    def taxPerson(self, person):
-        print(1)
+
         
         
     
@@ -196,7 +205,7 @@ class Game:
     def taxPeople(self):
         for person in self.people:
             tax = 0
-            prop_tax = person.taxes["prop"]*person.instances["labor_hours"]*person.attributes["jobwage"]
+            prop_tax = person.taxes["prop"]*person.instances["labor_hours"]*person.instances["jobwage"]
             flat_tax = person.taxes["flat"]
             tax = prop_tax + flat_tax
             if (person.resources["money"] < tax):
@@ -212,6 +221,9 @@ class Game:
         for person in self.people:
             person.updateJob()
             
+    #def hirePerson(self):
+        
+            
             
             
     def updatePeoplesTaxes(self):
@@ -219,13 +231,15 @@ class Game:
             prop_tax = 0
             flat_tax = 0
             for tax in self.taxes:
-                if tax.isPersonTaxable(person):
-                    if tax.attributes["tax_type"] == "flat":
-                        flat_tax += tax.attributes["tax_amount"]
-                    elif tax.attributes["tax_type"] == "prop":
-                        prop_tax += tax.attributes["tax_amount"]
-                    else:
-                        print("error: no such tax type")
+                if tax.isPersonEligible(person):
+                    #may throw error if tax type is only len 1
+                    for idx, tax_type in enumerate(tax.attributes["tax_type"]):
+                        if  tax_type== "flat":
+                            flat_tax += tax.attributes["tax_amount"][idx]
+                        elif tax_type == "prop":
+                            prop_tax += tax.attributes["tax_amount"][idx]
+                        else:
+                            print("error: no such tax type")
                         
             person.taxes["flat"],person.taxes["prop"] = flat_tax, prop_tax
             
@@ -235,15 +249,11 @@ class Game:
         for person in self.people:
             person.consumeGoods()
             
-    def returnPeopleStats(self,key,aggregate_operation):
+    def returnPeopleStats(self,key,aggregate_operation = "none"):
         vec = []
         for person in self.people:
-            attrs = person.attributes
-            resources = person.resources
-            taxes = person.taxes
-            instances = person.instances
             
-            combined_dict = {**attrs,**resources,**taxes,**instances}
+            combined_dict = person.returnCombinedDict()
             
             to_append = combined_dict[key]
             vec.append(to_append)
@@ -256,6 +266,9 @@ class Game:
             vec = np.sum(vec)
         elif aggregate_operation == "unique":
             vec = np.unique(vec)
+        elif aggregate_operation == "count":
+            unique, counts = np.unique(vec, return_counts=True)
+            vec = dict(zip(unique, counts))
         else:
             print("error: aggregate_operation not recognized")
         return vec
@@ -267,10 +280,3 @@ class Game:
         self.consume()
         self.updateJobs()
         
-
-g1 = Game()
-t1 = Tax(["culture","name"],[[0,2],"Ted"],["=","="],"xtax","money","flat",2)
-t2 = Tax(["culture","name"],[[0,2],"Ted"],["=","="],"xtax","money","prop",.1)
-g1.taxes.append(t1)
-g1.taxes.append(t2)
-g1.nextTick()
