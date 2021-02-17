@@ -1,0 +1,15 @@
+eventId: 1
+desc: "It is time. The rich and powerful have chosen to elect you as their Prince. A knock at the door. It is Minsk, your chief of police."
+option: {"desc": "Please, come in.","nextEvent": 2,"requirements": [], "effects": [["weatherDesc","=","good"]]}
+option: {"desc": "Not Now Minsk.","nextEvent": 3,"requirements": [], "effects": [["weatherDesc","=","clear"]]}
+option: {"desc": "Go away you red bastard.","nextEvent": 4,"requirements": [["playerCulture","!=","red"]], "effects": [["weatherDesc","=","clear"]]}
+
+eventId: 2
+desc: "Minsk enters."
+
+eventId: 3
+desc: "Silence. You look out the window of your office and admire the view."
+
+eventId: 4
+desc: "Minsk enters. Minsk looks at you disapprovingly."
+	
